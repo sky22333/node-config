@@ -85,6 +85,15 @@ func makeRemoteDNS(tag string, ep dnsEndpoint, detour string, s profile.Settings
 	addr := option.DNSServerAddressOptions{Server: ep.server, ServerPort: ep.port}
 
 	switch ep.typ {
+	case "tcp":
+		return option.DNSServerOptions{
+			Type: C.DNSTypeTCP,
+			Tag:  tag,
+			Options: &option.RemoteDNSServerOptions{
+				RawLocalDNSServerOptions: option.RawLocalDNSServerOptions{DialerOptions: dialer},
+				DNSServerAddressOptions:  addr,
+			},
+		}
 	case "https":
 		path := ep.path
 		if path == "" {
@@ -106,9 +115,44 @@ func makeRemoteDNS(tag string, ep dnsEndpoint, detour string, s profile.Settings
 				Path: path,
 			},
 		}
+	case "h3":
+		path := ep.path
+		if path == "" {
+			path = "/dns-query"
+		}
+		return option.DNSServerOptions{
+			Type: C.DNSTypeHTTP3,
+			Tag:  tag,
+			Options: &option.RemoteHTTPSDNSServerOptions{
+				RemoteTLSDNSServerOptions: option.RemoteTLSDNSServerOptions{
+					RemoteDNSServerOptions: option.RemoteDNSServerOptions{
+						RawLocalDNSServerOptions: option.RawLocalDNSServerOptions{DialerOptions: dialer},
+						DNSServerAddressOptions:  addr,
+					},
+					OutboundTLSOptionsContainer: option.OutboundTLSOptionsContainer{
+						TLS: &option.OutboundTLSOptions{Enabled: true, ServerName: ep.server},
+					},
+				},
+				Path: path,
+			},
+		}
 	case "tls":
 		return option.DNSServerOptions{
 			Type: C.DNSTypeTLS,
+			Tag:  tag,
+			Options: &option.RemoteTLSDNSServerOptions{
+				RemoteDNSServerOptions: option.RemoteDNSServerOptions{
+					RawLocalDNSServerOptions: option.RawLocalDNSServerOptions{DialerOptions: dialer},
+					DNSServerAddressOptions:  addr,
+				},
+				OutboundTLSOptionsContainer: option.OutboundTLSOptionsContainer{
+					TLS: &option.OutboundTLSOptions{Enabled: true, ServerName: ep.server},
+				},
+			},
+		}
+	case "quic":
+		return option.DNSServerOptions{
+			Type: C.DNSTypeQUIC,
 			Tag:  tag,
 			Options: &option.RemoteTLSDNSServerOptions{
 				RemoteDNSServerOptions: option.RemoteDNSServerOptions{
@@ -179,20 +223,21 @@ func buildDNSRules(c *buildCtx) []option.DNSRule {
 			switch r.Outbound {
 			case "direct", "bypass":
 				server = dnsDirect
-			case "block":
-				server = dnsBlock
 			}
 			raw := option.RawDefaultDNSRule{}
 			applyDNSDomainMatchers(&raw, r.Domains)
 			mergeDNSRuleSetTags(&raw, c.collectRuleSets(r))
 
-			rules = append(rules, defaultDNSRule(raw, option.DNSRuleAction{
+			action := option.DNSRuleAction{
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.DNSRouteActionOptions{
-					Server:       server,
-					DisableCache: server == dnsBlock,
+					Server: server,
 				},
-			}))
+			}
+			if r.Outbound == "block" {
+				action = option.DNSRuleAction{Action: C.RuleActionTypeReject}
+			}
+			rules = append(rules, defaultDNSRule(raw, action))
 		}
 	}
 	return rules

@@ -4,6 +4,7 @@ import (
 	"net/netip"
 	"net/url"
 	"strings"
+	"time"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
@@ -112,6 +113,8 @@ func parseDNSEndpoint(raw string) dnsEndpoint {
 	}
 	host, port := splitHostPort(u.Host, defaultDNSPort(u.Scheme))
 	switch u.Scheme {
+	case "tcp":
+		return dnsEndpoint{typ: "tcp", server: host, port: port}
 	case "https", "http":
 		return dnsEndpoint{typ: "https", server: host, port: port, path: u.Path}
 	case "tls":
@@ -173,4 +176,15 @@ func listablePorts(items []uint16) badoption.Listable[uint16] {
 		return nil
 	}
 	return badoption.Listable[uint16](items)
+}
+
+func durationFromString(s string) badoption.Duration {
+	if s == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		return 0
+	}
+	return badoption.Duration(d)
 }

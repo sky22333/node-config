@@ -17,19 +17,19 @@ type Settings struct {
 	ForExport bool   `json:"for_export,omitempty"`
 
 	// Mixed inbound
-	MixedPort    uint16 `json:"mixed_port,omitempty"`
-	MixedListen  string `json:"mixed_listen,omitempty"`
-	MixedUser    string `json:"mixed_user,omitempty"`
-	MixedPass    string `json:"mixed_pass,omitempty"`
-	AllowAccess  bool   `json:"allow_access,omitempty"` // listen on 0.0.0.0
+	MixedPort   uint16 `json:"mixed_port,omitempty"`
+	MixedListen string `json:"mixed_listen,omitempty"`
+	MixedUser   string `json:"mixed_user,omitempty"`
+	MixedPass   string `json:"mixed_pass,omitempty"`
+	AllowAccess bool   `json:"allow_access,omitempty"` // listen on 0.0.0.0
 
 	// VPN / TUN
-	TunStack         string   `json:"tun_stack,omitempty"` // gvisor, system, mixed
-	MTU              uint32   `json:"mtu,omitempty"`
-	StrictRoute      bool     `json:"strict_route,omitempty"`
-	IncludePackages  []string `json:"include_packages,omitempty"`
-	ExcludePackages  []string `json:"exclude_packages,omitempty"`
-	ResolveDest      bool     `json:"resolve_destination,omitempty"`
+	TunStack        string   `json:"tun_stack,omitempty"` // gvisor, system, mixed
+	MTU             uint32   `json:"mtu,omitempty"`
+	StrictRoute     bool     `json:"strict_route,omitempty"`
+	IncludePackages []string `json:"include_packages,omitempty"`
+	ExcludePackages []string `json:"exclude_packages,omitempty"`
+	ResolveDest     bool     `json:"resolve_destination,omitempty"`
 
 	// DNS
 	RemoteDNS        []string `json:"remote_dns,omitempty"`
@@ -38,18 +38,24 @@ type Settings struct {
 	EnableDNSRouting bool     `json:"enable_dns_routing,omitempty"`
 
 	// Route
-	IPv6Mode          string      `json:"ipv6_mode,omitempty"`
-	BypassPrivateIP   bool        `json:"bypass_private_ip,omitempty"`
-	GlobalMode        bool        `json:"global_mode,omitempty"`
-	BypassLAN         bool        `json:"bypass_lan,omitempty"`
-	Sniff             bool        `json:"sniff,omitempty"`
-	SniffOverrideDest bool        `json:"sniff_override_destination,omitempty"`
-	Rules             []RouteRule `json:"rules,omitempty"`
-	RuleSetUpdateInterval string  `json:"rule_set_update_interval,omitempty"` // e.g. "24h"
+	IPv6Mode              string      `json:"ipv6_mode,omitempty"`
+	BypassPrivateIP       bool        `json:"bypass_private_ip,omitempty"`
+	GlobalMode            bool        `json:"global_mode,omitempty"`
+	BypassLAN             bool        `json:"bypass_lan,omitempty"`
+	Sniff                 bool        `json:"sniff,omitempty"`
+	SniffOverrideDest     bool        `json:"sniff_override_destination,omitempty"`
+	Rules                 []RouteRule `json:"rules,omitempty"`
+	RuleSetUpdateInterval string      `json:"rule_set_update_interval,omitempty"` // e.g. "24h"
 
 	// Selector group (when IsSelector, Profile is the selected member).
-	IsSelector         bool    `json:"is_selector,omitempty"`
-	SelectorProfileIDs []int64 `json:"selector_profile_ids,omitempty"`
+	IsSelector                bool    `json:"is_selector,omitempty"`
+	IsURLTest                 bool    `json:"is_url_test,omitempty"`
+	SelectorProfileIDs        []int64 `json:"selector_profile_ids,omitempty"`
+	URLTestURL                string  `json:"url_test_url,omitempty"`
+	URLTestInterval           string  `json:"url_test_interval,omitempty"`
+	URLTestTolerance          uint16  `json:"url_test_tolerance,omitempty"`
+	URLTestIdleTimeout        string  `json:"url_test_idle_timeout,omitempty"`
+	InterruptExistConnections bool    `json:"interrupt_exist_connections,omitempty"`
 
 	// Misc
 	LogLevel        string `json:"log_level,omitempty"`

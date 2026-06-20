@@ -47,9 +47,15 @@ type Profile struct {
 
 	HysteriaVersion int    `json:"hysteria_version,omitempty"`
 	ServerPorts     string `json:"server_ports,omitempty"`
+	HopInterval     string `json:"hop_interval,omitempty"`
+	HopIntervalMax  string `json:"hop_interval_max,omitempty"`
 	Obfuscation     string `json:"obfuscation,omitempty"`
+	ObfsType        string `json:"obfs_type,omitempty"`
+	ObfsMinSize     int    `json:"obfs_min_size,omitempty"`
+	ObfsMaxSize     int    `json:"obfs_max_size,omitempty"`
 	UploadMbps      int    `json:"upload_mbps,omitempty"`
 	DownloadMbps    int    `json:"download_mbps,omitempty"`
+	BBRProfile      string `json:"bbr_profile,omitempty"`
 
 	Token             string `json:"token,omitempty"`
 	CongestionControl string `json:"congestion_control,omitempty"`

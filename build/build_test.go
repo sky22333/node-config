@@ -151,6 +151,34 @@ func TestBuildSelector(t *testing.T) {
 	}
 }
 
+func TestBuildURLTest(t *testing.T) {
+	a := profile.Profile{ID: 1, Name: "a", Type: profile.TypeSS, Server: "1.1.1.1", Port: 8388, Method: "aes-256-gcm", Password: "a"}
+	b := profile.Profile{ID: 2, Name: "b", Type: profile.TypeSS, Server: "2.2.2.2", Port: 8388, Method: "aes-256-gcm", Password: "b"}
+	settings := profile.DefaultSettings()
+	settings.IsURLTest = true
+	settings.SelectorProfileIDs = []int64{1, 2}
+	settings.URLTestURL = "https://example.com/generate_204"
+	settings.URLTestInterval = "1m"
+	settings.URLTestTolerance = 100
+	result, err := build.Build(build.Input{
+		Profile:  a,
+		Profiles: map[int64]profile.Profile{1: a, 2: b},
+		Settings: settings,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(result.Config, `"type":"urltest"`) && !strings.Contains(result.Config, `"type": "urltest"`) {
+		t.Fatal("urltest outbound missing")
+	}
+	if !strings.Contains(result.Config, `"tolerance":100`) && !strings.Contains(result.Config, `"tolerance": 100`) {
+		t.Fatal("urltest tolerance missing")
+	}
+	if result.MainOutboundTag != build.TagProxy {
+		t.Fatalf("urltest mode main tag: %s", result.MainOutboundTag)
+	}
+}
+
 func TestBuildRuleSet(t *testing.T) {
 	settings := profile.DefaultSettings()
 	settings.Rules = []profile.RouteRule{{
@@ -186,5 +214,40 @@ func TestBuildRemoteRuleSet(t *testing.T) {
 	}
 	if !strings.Contains(result.Config, `"type":"remote"`) && !strings.Contains(result.Config, `"type": "remote"`) {
 		t.Fatal("remote rule_set missing")
+	}
+}
+
+func TestBuildTypedDNSServers(t *testing.T) {
+	settings := profile.DefaultSettings()
+	settings.DirectDNS = []string{"tcp://1.1.1.1"}
+	settings.RemoteDNS = []string{"quic://dns.example.com"}
+	result, err := build.Build(build.Input{Profile: ssProfile, Settings: settings})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(result.Config, `"type":"tcp"`) && !strings.Contains(result.Config, `"type": "tcp"`) {
+		t.Fatal("tcp dns server missing")
+	}
+	if !strings.Contains(result.Config, `"type":"quic"`) && !strings.Contains(result.Config, `"type": "quic"`) {
+		t.Fatal("quic dns server missing")
+	}
+}
+
+func TestBuildDNSBlockRuleRejects(t *testing.T) {
+	settings := profile.DefaultSettings()
+	settings.EnableDNSRouting = true
+	settings.Rules = []profile.RouteRule{{
+		Outbound: "block",
+		Domains:  []string{"domain:ads.example"},
+	}}
+	result, err := build.Build(build.Input{Profile: ssProfile, Settings: settings})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(result.Config, "dns-block") {
+		t.Fatal("dns block rule must not reference missing dns-block server")
+	}
+	if !strings.Contains(result.Config, `"action":"reject"`) && !strings.Contains(result.Config, `"action": "reject"`) {
+		t.Fatal("dns block rule must reject")
 	}
 }

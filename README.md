@@ -55,9 +55,9 @@ out, err := build.Build(build.Input{
 ## CLI
 
 ```bash
-go run ./cmd/node-config parse -f subscription.yaml
-go run ./cmd/node-config export -p profile.json
-go run ./cmd/node-config build -p profile.json
+go run ./cmd parse -f subscription.yaml
+go run ./cmd export -p profile.json
+go run ./cmd build -p profile.json
 ```
 
 ## 模块

@@ -163,8 +163,8 @@ func (c *buildCtx) buildOutbounds(in Input) ([]option.Outbound, string, error) {
 		}
 	}
 
-	useSelector := c.settings.IsSelector && !c.settings.ForTest && !c.settings.ForExport
-	if useSelector {
+	useGroup := (c.settings.IsSelector || c.settings.IsURLTest) && !c.settings.ForTest && !c.settings.ForExport
+	if useGroup {
 		var tags []string
 		defaultTag := ""
 		for _, id := range c.settings.SelectorProfileIDs {
@@ -189,15 +189,8 @@ func (c *buildCtx) buildOutbounds(in Input) ([]option.Outbound, string, error) {
 		if defaultTag == "" {
 			defaultTag = tags[0]
 		}
-		selector := option.Outbound{
-			Type: constant.TypeSelector,
-			Tag:  TagProxy,
-			Options: &option.SelectorOutboundOptions{
-				Outbounds: tags,
-				Default:   defaultTag,
-			},
-		}
-		outbounds = append([]option.Outbound{selector}, outbounds...)
+		group := c.groupOutbound(tags, defaultTag)
+		outbounds = append([]option.Outbound{group}, outbounds...)
 		mainTag = TagProxy
 	} else {
 		tag, chainOuts, err := c.buildChain(in.Profile.ID, in.Profile)
@@ -218,6 +211,32 @@ func (c *buildCtx) buildOutbounds(in Input) ([]option.Outbound, string, error) {
 	}
 	outbounds = append(outbounds, base...)
 	return outbounds, mainTag, nil
+}
+
+func (c *buildCtx) groupOutbound(tags []string, defaultTag string) option.Outbound {
+	if c.settings.IsURLTest {
+		return option.Outbound{
+			Type: constant.TypeURLTest,
+			Tag:  TagProxy,
+			Options: &option.URLTestOutboundOptions{
+				Outbounds:                 tags,
+				URL:                       c.settings.URLTestURL,
+				Interval:                  durationFromString(c.settings.URLTestInterval),
+				Tolerance:                 c.settings.URLTestTolerance,
+				IdleTimeout:               durationFromString(c.settings.URLTestIdleTimeout),
+				InterruptExistConnections: c.settings.InterruptExistConnections,
+			},
+		}
+	}
+	return option.Outbound{
+		Type: constant.TypeSelector,
+		Tag:  TagProxy,
+		Options: &option.SelectorOutboundOptions{
+			Outbounds:                 tags,
+			Default:                   defaultTag,
+			InterruptExistConnections: c.settings.InterruptExistConnections,
+		},
+	}
 }
 
 func (c *buildCtx) readableTag(name string) string {

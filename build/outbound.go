@@ -92,20 +92,11 @@ func trojanOutbound(p profile.Profile, tag string) option.Outbound {
 		Password: p.Password,
 	}
 	if p.TLS != nil {
-		opts.TLS = &option.OutboundTLSOptions{
-			Enabled:    true,
-			ServerName: p.TLS.SNI,
-			Insecure:   p.TLS.AllowInsecure,
-		}
-		if p.TLS.ALPN != "" {
-			opts.TLS.ALPN = badoption.Listable[string]{p.TLS.ALPN}
-		}
+		opts.TLS = outboundTLS(p)
 	} else {
 		opts.TLS = &option.OutboundTLSOptions{Enabled: true}
 	}
-	if p.Transport != nil && p.Transport.Type != "" && p.Transport.Type != "tcp" {
-		opts.Transport = &option.V2RayTransportOptions{Type: p.Transport.Type}
-	}
+	opts.Transport = v2rayTransport(p)
 	return option.Outbound{Type: constant.TypeTrojan, Tag: tag, Options: opts}
 }
 
@@ -162,10 +153,10 @@ func anytlsOutbound(p profile.Profile, tag string) option.Outbound {
 
 func naiveOutbound(p profile.Profile, tag string) option.Outbound {
 	opts := &option.NaiveOutboundOptions{
-		ServerOptions: option.ServerOptions{Server: p.Server, ServerPort: p.Port},
-		Username:      p.Username,
-		Password:      p.Password,
-		QUIC:          p.NaiveQUIC || p.NaiveProto == "quic",
+		ServerOptions:       option.ServerOptions{Server: p.Server, ServerPort: p.Port},
+		Username:            p.Username,
+		Password:            p.Password,
+		QUIC:                p.NaiveQUIC || p.NaiveProto == "quic",
 		InsecureConcurrency: p.InsecureConcurrency,
 	}
 	if p.ExtraHeaders != "" {
@@ -201,13 +192,13 @@ func sshOutbound(p profile.Profile, tag string) option.Outbound {
 		user = p.Username
 	}
 	opts := &option.SSHOutboundOptions{
-		ServerOptions: option.ServerOptions{Server: p.Server, ServerPort: p.Port},
-		User:          user,
-		Password:      p.Password,
-		PrivateKey:    listableStrings([]string{p.PrivateKey}),
-		PrivateKeyPath: p.PrivateKeyPath,
+		ServerOptions:        option.ServerOptions{Server: p.Server, ServerPort: p.Port},
+		User:                 user,
+		Password:             p.Password,
+		PrivateKey:           listableStrings([]string{p.PrivateKey}),
+		PrivateKeyPath:       p.PrivateKeyPath,
 		PrivateKeyPassphrase: p.PrivateKeyPassphrase,
-		HostKey:       listableStrings(p.HostKey),
+		HostKey:              listableStrings(p.HostKey),
 	}
 	return option.Outbound{Type: constant.TypeSSH, Tag: tag, Options: opts}
 }
@@ -286,17 +277,36 @@ func vlessOutbound(p profile.Profile, tag string) option.Outbound {
 }
 
 func hysteria2Outbound(p profile.Profile, tag string) option.Outbound {
+	server := option.ServerOptions{Server: p.Server, ServerPort: p.Port}
+	if p.ServerPorts != "" {
+		server.ServerPort = 0
+	}
 	opts := &option.Hysteria2OutboundOptions{
-		ServerOptions: option.ServerOptions{Server: p.Server, ServerPort: p.Port},
+		ServerOptions: server,
 		Password:      p.Password,
 		UpMbps:        p.UploadMbps,
 		DownMbps:      p.DownloadMbps,
+		BBRProfile:    p.BBRProfile,
 	}
 	if p.ServerPorts != "" {
 		opts.ServerPorts = badoption.Listable[string]{p.ServerPorts}
 	}
+	if p.HopInterval != "" {
+		opts.HopInterval = durationFromString(p.HopInterval)
+	}
+	if p.HopIntervalMax != "" {
+		opts.HopIntervalMax = durationFromString(p.HopIntervalMax)
+	}
 	if p.Obfuscation != "" {
-		opts.Obfs = &option.Hysteria2Obfs{Type: constant.Hysteria2ObfsTypeSalamander, Password: p.Obfuscation}
+		obfsType := p.ObfsType
+		if obfsType == "" {
+			obfsType = constant.Hysteria2ObfsTypeSalamander
+		}
+		opts.Obfs = &option.Hysteria2Obfs{Type: obfsType, Password: p.Obfuscation}
+		if obfsType == constant.Hysteria2ObfsTypeGecko {
+			opts.Obfs.GeckoOptions.MinPacketSize = p.ObfsMinSize
+			opts.Obfs.GeckoOptions.MaxPacketSize = p.ObfsMaxSize
+		}
 	}
 	opts.TLS = outboundTLS(p)
 	if opts.TLS == nil {
@@ -308,17 +318,21 @@ func hysteria2Outbound(p profile.Profile, tag string) option.Outbound {
 }
 
 func hysteria1Outbound(p profile.Profile, tag string) option.Outbound {
-	port := p.Port
+	server := option.ServerOptions{Server: p.Server, ServerPort: p.Port}
 	if p.ServerPorts != "" {
-		if n, err := parseFirstPort(p.ServerPorts); err == nil {
-			port = n
-		}
+		server.ServerPort = 0
 	}
 	opts := &option.HysteriaOutboundOptions{
-		ServerOptions: option.ServerOptions{Server: p.Server, ServerPort: port},
+		ServerOptions: server,
 		UpMbps:        p.UploadMbps,
 		DownMbps:      p.DownloadMbps,
 		Obfs:          p.Obfuscation,
+	}
+	if p.ServerPorts != "" {
+		opts.ServerPorts = badoption.Listable[string]{p.ServerPorts}
+	}
+	if p.HopInterval != "" {
+		opts.HopInterval = durationFromString(p.HopInterval)
 	}
 	if p.Password != "" {
 		opts.AuthString = p.Password

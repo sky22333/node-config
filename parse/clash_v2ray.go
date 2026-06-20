@@ -134,6 +134,24 @@ func clashHysteria2(m map[string]any) profile.Profile {
 	if v := str(m["ports"]); v != "" {
 		p.ServerPorts = v
 	}
+	if v := str(m["hop-interval"]); v != "" {
+		p.HopInterval = v
+	}
+	if v := str(m["hop-interval-max"]); v != "" {
+		p.HopIntervalMax = v
+	}
+	if v := str(m["obfs"]); v != "" {
+		p.ObfsType = v
+	}
+	if v := intFromAny(m["obfs-min-size"]); v != 0 {
+		p.ObfsMinSize = v
+	}
+	if v := intFromAny(m["obfs-max-size"]); v != 0 {
+		p.ObfsMaxSize = v
+	}
+	if v := str(m["bbr-profile"]); v != "" {
+		p.BBRProfile = v
+	}
 	return p
 }
 

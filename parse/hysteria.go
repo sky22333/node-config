@@ -37,6 +37,12 @@ func parseHysteria2(raw string) (profile.Profile, error) {
 	if v := q.Get("mport"); v != "" {
 		p.ServerPorts = v
 	}
+	if v := q.Get("hop_interval"); v != "" {
+		p.HopInterval = v
+	}
+	if v := q.Get("hop_interval_max"); v != "" {
+		p.HopIntervalMax = v
+	}
 	if v := q.Get("sni"); v != "" {
 		p.TLS.SNI = v
 	}
@@ -45,6 +51,21 @@ func parseHysteria2(raw string) (profile.Profile, error) {
 	}
 	if v := q.Get("obfs-password"); v != "" {
 		p.Obfuscation = v
+	}
+	if v := q.Get("obfs"); v != "" {
+		p.ObfsType = v
+	}
+	if v := q.Get("obfs-type"); v != "" {
+		p.ObfsType = v
+	}
+	if v := q.Get("obfs_min_size"); v != "" {
+		p.ObfsMinSize, _ = strconv.Atoi(v)
+	}
+	if v := q.Get("obfs_max_size"); v != "" {
+		p.ObfsMaxSize, _ = strconv.Atoi(v)
+	}
+	if v := q.Get("bbr_profile"); v != "" {
+		p.BBRProfile = v
 	}
 	if v := q.Get("upmbps"); v != "" {
 		p.UploadMbps, _ = strconv.Atoi(v)
@@ -74,8 +95,9 @@ func parseHysteria1(raw string) (profile.Profile, error) {
 	q := u.Query()
 	if v := q.Get("mport"); v != "" {
 		p.ServerPorts = v
-	} else {
-		p.ServerPorts = strconv.Itoa(int(p.Port))
+	}
+	if v := q.Get("hop_interval"); v != "" {
+		p.HopInterval = v
 	}
 	if v := q.Get("peer"); v != "" {
 		p.TLS.SNI = v

@@ -20,7 +20,11 @@ func wireguardEndpoint(p profile.Profile, tag string) (option.Endpoint, error) {
 	}
 	var prefixes []netip.Prefix
 	for _, a := range addrs {
-		prefixes = append(prefixes, netip.MustParsePrefix(a))
+		prefix, err := netip.ParsePrefix(a)
+		if err != nil {
+			return option.Endpoint{}, profile.ErrInvalidFormat
+		}
+		prefixes = append(prefixes, prefix)
 	}
 	allowed := p.AllowedIPs
 	if len(allowed) == 0 {
@@ -28,7 +32,11 @@ func wireguardEndpoint(p profile.Profile, tag string) (option.Endpoint, error) {
 	}
 	var allowedPrefixes []netip.Prefix
 	for _, a := range allowed {
-		allowedPrefixes = append(allowedPrefixes, netip.MustParsePrefix(a))
+		prefix, err := netip.ParsePrefix(a)
+		if err != nil {
+			return option.Endpoint{}, profile.ErrInvalidFormat
+		}
+		allowedPrefixes = append(allowedPrefixes, prefix)
 	}
 	peer := option.WireGuardPeer{
 		Address:    p.Server,
